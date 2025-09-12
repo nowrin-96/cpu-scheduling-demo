@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SJF Scheduling with Averages</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: linear-gradient(135deg, orange, black);
+      min-height: 100vh;
+      color: #f0f0f0;
+      text-align: center;
+    }
+    h1 { color: #f0f0f0; text-shadow: 2px 2px 4px #000; }
+    h2 { color: #f0f0f0; }
+    button {
+      padding: 10px 20px;
+      margin: 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+      background: #333;
+      transition: transform 0.2s, background 0.3s;
+    }
+    button:hover {
+      background: #555;
+      transform: scale(1.05);
+    }
+    table {
+      border-collapse: collapse;
+      margin: 20px auto;
+      width: 80%;
+      background-color: rgba(255, 255, 255, 0.8);
+      animation: fadeIn 1s ease-in;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 6px;
+      text-align: center;
+      color: #2c3e50;
+    }
+    th {
+      background: #555;
+      color: #fff;
+    }
+    .gantt {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+      animation: slideIn 1s ease-out;
+    }
+    .block {
+      border: 1px solid #000;
+      padding: 12px;
+      margin: 0 3px;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      min-width: 60px;
+      text-align: center;
+      opacity: 0;
+      animation: fadeInBlock 0.8s forwards;
+    }
+    .P1 { background: #e17055; }
+    .P2 { background: #d63031; }
+    .P3 { background: #6c5ce7; }
+    .P4 { background: #fdcb6e; }
+
+    @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+    @keyframes slideIn { from {transform: translateY(30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+    @keyframes fadeInBlock { from {opacity: 0; transform: scale(0.8);} to {opacity: 1; transform: scale(1);} }
+  </style>
+</head>
+<body>
+  <h1>✨ SJF Scheduling Demo with Averages</h1>
+  <p><b>Processes:</b> P1(AT=0,BT=5), P2(AT=1,BT=3), P3(AT=2,BT=8), P4(AT=3,BT=6)</p>
+
+  <button onclick="runSJF()">Run SJF</button>
+  <div id="output"></div>
+
+  <script>
+    const processes = [
+      {pid: "P1", at: 0, bt: 5},
+      {pid: "P2", at: 1, bt: 3},
+      {pid: "P3", at: 2, bt: 8},
+      {pid: "P4", at: 3, bt: 6}
+    ];
+
+    function runSJF() {
+      let time = 0;
+      const done = Array(processes.length).fill(false);
+      const result = [];
+      const n = processes.length;
+
+      while (result.length < n) {
+        const available = processes
+          .map((p, i) => ({ ...p, index: i }))
+          .filter(p => !done[p.index] && p.at <= time);
+        if (available.length === 0) {
+          time++;
+          continue;
+        }
+        const next = available.reduce((a, b) => (a.bt < b.bt ? a : b));
+        time += next.bt;
+        const ct = time;
+        const tat = ct - next.at;
+        const wt = tat - next.bt;
+        result.push({ ...next, ct, tat, wt });
+        done[next.index] = true;
+      }
+      showResultWithAverages("SJF (Non-Preemptive)", result);
+    }
+
+    function showResultWithAverages(title, result) {
+      let output = `<h2>${title}</h2>`;
+      output += "<table><tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT</th><th>WT</th></tr>";
+      let totalTAT = 0, totalWT = 0;
+
+      result.forEach(r => {
+        output += `<tr>
+          <td>${r.pid}</td>
+          <td>${r.at}</td>
+          <td>${r.bt}</td>
+          <td>${r.ct}</td>
+          <td>${r.tat}</td>
+          <td>${r.wt}</td>
+        </tr>`;
+        totalTAT += r.tat;
+        totalWT += r.wt;
+      });
+
+      const avgTAT = (totalTAT / result.length).toFixed(2);
+      const avgWT = (totalWT / result.length).toFixed(2);
+
+      output += "</table>";
+      output += `<p><strong>Average Turnaround Time (TAT):</strong> ${avgTAT}</p>`;
+      output += `<p><strong>Average Waiting Time (WT):</strong> ${avgWT}</p>`;
+
+      output += "<div class='gantt'>";
+      result.forEach((r, i) => {
+        output += `<div class='block ${r.pid}' style="animation-delay:${i * 0.3}s">${r.pid}</div>`;
+      });
+      output += "</div>";
+
+      document.getElementById("output").innerHTML = output;
+    }
+  </script>
+</body>
+</html>
